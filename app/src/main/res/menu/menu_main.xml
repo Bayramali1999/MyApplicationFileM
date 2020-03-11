@@ -4,10 +4,10 @@
     tools:context="com.example.myapplication.MainActivity">
 
     <group android:checkableBehavior="single">
-
         <item
             android:id="@+id/sort_by_name"
             android:title="Sort by name" />
+
         <item
             android:id="@+id/sort_by_date"
             android:title="Sort by date" />
@@ -20,5 +20,4 @@
         android:title=""
         app:actionViewClass="androidx.appcompat.widget.SearchView"
         app:showAsAction="always" />
-
 </menu>

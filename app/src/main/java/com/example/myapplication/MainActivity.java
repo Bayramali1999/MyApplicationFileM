@@ -10,6 +10,7 @@ import com.example.myapplication.fragments.FileFragment;
 
 public class MainActivity extends AppCompatActivity {
     private static final int READ_REQ_CODE = 313;
+    FileFragment fileFragment;
 
     @SuppressLint("WrongConstant")
     @Override
@@ -19,7 +20,7 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        FileFragment fileFragment = new FileFragment();
+        fileFragment = new FileFragment();
 
         getSupportFragmentManager()
                 .beginTransaction()
@@ -30,6 +31,9 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onSupportNavigateUp() {
-        return true;
+        if (fileFragment.sv != null) {
+            return true;
+        }
+        return false;
     }
 }

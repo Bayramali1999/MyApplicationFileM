@@ -5,16 +5,19 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.recyclerview.selection.ItemDetailsLookup;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.myapplication.R;
+import com.example.myapplication.data.FileModel;
 import com.example.myapplication.listener.FileItemClickListener;
 
-import java.io.File;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 
-class FileVH extends RecyclerView.ViewHolder implements View.OnClickListener {
+public class FileVH extends RecyclerView.ViewHolder implements View.OnClickListener {
     private TextView tvName;
     private TextView tvSpace;
     private TextView tvCreatedDate;
@@ -22,7 +25,7 @@ class FileVH extends RecyclerView.ViewHolder implements View.OnClickListener {
     private boolean showExtension;
     private View v;
     private TextView tvExtension;
-    private File file;
+    private FileModel file;
     private FileItemClickListener listener;
 
     FileVH(@NonNull View itemView, boolean showExtension, FileItemClickListener listener) {
@@ -40,47 +43,67 @@ class FileVH extends RecyclerView.ViewHolder implements View.OnClickListener {
 
     @Override
     public void onClick(View v) {
-        listener.fileIsClicked(file);
+        ArrayList<FileModel> files = new ArrayList<>();
+        files.add(file);
+        listener.fileIsClicked(files);
     }
 
-    void onBind(File file) {
+    void onBind(FileModel file, boolean selected) {
         this.file = file;
         String name = file.getName();
-
+        tvName.setText(name);
         setFileSpace(file);
         setFileCreatedDate(file);
-        setFileImage(name);
+        int drawable = setFileImage(name);
+
+        if (drawable == 0) {
+            fileIc.setVisibility(View.GONE);
+            v.setVisibility(View.VISIBLE);
+        } else {
+            fileIc.setVisibility(View.VISIBLE);
+            v.setVisibility(View.GONE);
+            fileIc.setImageResource(drawable);
+        }
+        itemView.setActivated(selected);
     }
 
-    private void setFileImage(String name) {
+    private int setFileImage(String name) {
         int dot = name.lastIndexOf(".");
         String fExt = name.substring(dot + 1);
-        fileIc.setVisibility(View.VISIBLE);
-        v.setVisibility(View.INVISIBLE);
-        fileIc.setImageResource(R.drawable.ic_pdf);
-//
-//        if (fExt.length() > 4) {
-//            tvExtension.setText("");
-//        } else {
-//            tvExtension.setText(fExt);
-//        }
-
-        if (showExtension) {
-            bindDataWithExtension(file);
-        } else {
-            bindData(file);
+        if (dot == -1) {
+            fExt = "";
+        }
+        switch (fExt) {
+            case "doc":
+            case "docx":
+                return R.drawable.ic_doc_mcs;
+            case "ppt":
+            case "pptx":
+                return R.drawable.ic_ppt_mcs;
+            case "xls":
+            case "xlsx":
+                return R.drawable.ic_xls_mcs;
+            case "pdf":
+                return R.drawable.ic_pdf_mcs;
+            default: {
+                if (fExt.length() > 3) {
+                    fExt = fExt.substring(0, 3);
+                }
+                tvExtension.setText(fExt);
+                return 0;
+            }
         }
     }
 
-    private void setFileCreatedDate(File file) {
+    private void setFileCreatedDate(FileModel file) {
         SimpleDateFormat sd = new SimpleDateFormat("dd/MM/yyy");
-        Date date = new Date(file.lastModified());
+        Date date = new Date(file.getLastModified());
         String modifiedDate = sd.format(date);
         tvCreatedDate.setText(modifiedDate);
     }
 
-    private void setFileSpace(File file) {
-        long space = Long.parseLong(String.valueOf(file.length() / 1024));
+    private void setFileSpace(FileModel file) {
+        long space = Long.parseLong(String.valueOf(file.getLength() / 1024));
         if (space >= 1024) {
             long mbSpace = space / 1024;
             tvSpace.setText(mbSpace + " MB");
@@ -89,38 +112,18 @@ class FileVH extends RecyclerView.ViewHolder implements View.OnClickListener {
         }
     }
 
-    private void bindData(File file) {
-        String name = file.getName();
-        int dot = name.lastIndexOf(".");
-        String fileName = name.substring(0, dot + 1);
-        tvName.setText(fileName);
-    }
+    public ItemDetailsLookup.ItemDetails getItemDetails() {
+        return new ItemDetailsLookup.ItemDetails<FileModel>() {
+            @Override
+            public int getPosition() {
+                return getAdapterPosition();
+            }
 
-    private void bindDataWithExtension(File file) {
-        String fileName;
-        String name = file.getName();
-        if (name.length() > 40) {
-            fileName = name.substring(0, 40) + "...";
-        } else {
-            fileName = file.getName();
-        }
-        tvName.setText(fileName);
-    }
-
-    private int setUpFileIc(String name) {
-        String[] fileExtensions = new String[]{
-                "doc", "docx", "ppt",
-                "pptx", "xls", "xlsx", "pdf"
+            @Nullable
+            @Override
+            public FileModel getSelectionKey() {
+                return file;
+            }
         };
-        if (name.length() > 0) {
-            return getFileExtensionsIndex(name, fileExtensions);
-        } else {
-            return R.drawable.ic_search;
-        }
     }
-
-    private int getFileExtensionsIndex(String extension, String[] fileExtensions) {
-        return R.drawable.ic_pdf;
-    }
-
 }
