@@ -18,13 +18,6 @@
             android:layout_height="54dp"
             android:layout_gravity="center">
 
-            <include
-                android:id="@+id/lv_another"
-                layout="@layout/another_file"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:visibility="gone" />
-
             <ImageView
                 android:id="@+id/iv_file"
                 android:layout_width="match_parent"
@@ -33,7 +26,7 @@
                 android:paddingTop="8dp"
                 android:paddingEnd="4dp"
                 android:paddingBottom="8dp"
-                android:src="@drawable/ic_pdf_mcs" />
+                android:src="@drawable/ic_storage" />
         </RelativeLayout>
 
         <RelativeLayout
@@ -42,31 +35,12 @@
             android:padding="8dp">
 
             <TextView
-                android:id="@+id/tv_file_name"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentTop="true"
-                android:layout_marginTop="8dp"
-                android:ellipsize="end"
-                android:maxLines="1"
+                android:id="@+id/tv_other_doc"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center|start"
                 android:textColor="@android:color/background_dark"
-                tools:text="This is a file name" />
-
-            <TextView
-                android:id="@+id/tv_file_size"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentBottom="true"
-                tools:text="800 KB" />
-
-            <TextView
-                android:id="@+id/tv_file_date"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentEnd="true"
-                android:layout_alignParentBottom="true"
-                android:text="12.06.1994" />
-
+                tools:text="sada" />
         </RelativeLayout>
 
     </LinearLayout>

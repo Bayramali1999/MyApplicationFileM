@@ -2,9 +2,8 @@ package com.example.myapplication.listener;
 
 import com.example.myapplication.data.FileModel;
 
-import java.io.File;
-import java.util.ArrayList;
+import java.util.List;
 
 public interface FileItemClickListener {
-    void fileIsClicked(ArrayList<FileModel> file);
+    void fileIsClicked(List<FileModel> file);
 }

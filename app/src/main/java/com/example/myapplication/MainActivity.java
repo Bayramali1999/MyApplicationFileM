@@ -2,15 +2,18 @@ package com.example.myapplication;
 
 import android.annotation.SuppressLint;
 import android.os.Bundle;
+import android.view.MotionEvent;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
 import com.example.myapplication.fragments.FileFragment;
+import com.example.myapplication.listener.NavigationUpClickListener;
 
 public class MainActivity extends AppCompatActivity {
     private static final int READ_REQ_CODE = 313;
     FileFragment fileFragment;
+    private NavigationUpClickListener listener = null;
 
     @SuppressLint("WrongConstant")
     @Override
@@ -21,7 +24,7 @@ public class MainActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
         fileFragment = new FileFragment();
-
+        listener = (NavigationUpClickListener) fileFragment;
         getSupportFragmentManager()
                 .beginTransaction()
                 .replace(R.id.root, fileFragment)
@@ -31,9 +34,14 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onSupportNavigateUp() {
-        if (fileFragment.sv != null) {
-            return true;
+        if (listener != null) {
+            listener.navClicked();
         }
-        return false;
+        return true;
+    }
+    
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+        return ev.getPointerCount()==1 && super.dispatchTouchEvent(ev);
     }
 }

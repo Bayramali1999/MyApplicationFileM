@@ -11,10 +11,10 @@ import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -25,43 +25,48 @@ import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentManager;
-import androidx.recyclerview.selection.ItemDetailsLookup;
-import androidx.recyclerview.selection.OnDragInitiatedListener;
-import androidx.recyclerview.selection.OnItemActivatedListener;
 import androidx.recyclerview.selection.SelectionTracker;
 import androidx.recyclerview.selection.StorageStrategy;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.myapplication.MainActivity;
 import com.example.myapplication.R;
-import com.example.myapplication.adapter.FileAdapter;
+import com.example.myapplication.adapter.Adapter;
+import com.example.myapplication.data.BaseModel;
 import com.example.myapplication.data.FileModel;
+import com.example.myapplication.data.OtherDocModel;
 import com.example.myapplication.listener.FileItemClickListener;
+import com.example.myapplication.listener.NavigationUpClickListener;
+import com.example.myapplication.listener.OtherDocClickListener;
 import com.example.myapplication.tracker.MyFileKeyProvider;
 import com.example.myapplication.tracker.MyFileLookup;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
-public class FileFragment extends Fragment implements ActionMode.Callback {
+public class FileFragment extends Fragment implements ActionMode.Callback, NavigationUpClickListener {
     private static final int READ_REQ_CODE = 313;
     private RecyclerView rv;
-    private FileAdapter fileAdapter;
-    private List<FileModel> list;
+    private Adapter fileAdapter;
+    private List<FileModel> fileList;
+    private List<BaseModel> list;
+    private OtherDocModel header = new OtherDocModel("Browse other docs...");
     private FileItemClickListener clickListener;
-    private SelectionTracker<FileModel> selectionTracker;
+    private SelectionTracker<BaseModel> selectionTracker;
     private ActionMode actionMode = null;
     private List<FileModel> sendFiles = new ArrayList<>();
     private List<FileModel> originList = new ArrayList<>();
-    public SearchView sv = null;
-
+    private SearchView sv = null;
+    private OtherDocClickListener otherDocClickListener;
 
     @Override
     public View onCreateView(LayoutInflater inflater,
                              ViewGroup container,
                              Bundle savedInstanceState) {
+
         View view = inflater.inflate(R.layout.fragment_select_file, container, false);
         Drawable drawable = ContextCompat.getDrawable(getContext(), R.drawable.ic_sort);
         MainActivity activity = (MainActivity) getActivity();
@@ -69,33 +74,11 @@ public class FileFragment extends Fragment implements ActionMode.Callback {
         toolbar.setOverflowIcon(drawable);
         setUpListener();
         list = new ArrayList<>();
-        fileAdapter = new FileAdapter(list, true, clickListener);
+        list.add(header);
+        fileList = new ArrayList<>();
+        fileAdapter = new Adapter(list, false, clickListener, otherDocClickListener);
         rv = view.findViewById(R.id.rv_list);
         return view;
-    }
-
-    private void setUpListener() {
-        clickListener = new FileItemClickListener() {
-            @Override
-            public void fileIsClicked(ArrayList<FileModel> file) {
-                AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
-                builder.setPositiveButton("SEND", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                    }
-                });
-                builder.setNegativeButton("CANCEL", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        return;
-                    }
-                });
-
-                builder.setTitle("Send '" + file.get(0).getName() + "' to ... ?");
-                builder.create();
-                builder.show();
-            }
-        };
     }
 
     @Override
@@ -105,9 +88,56 @@ public class FileFragment extends Fragment implements ActionMode.Callback {
         setHasOptionsMenu(true);
         rv.setAdapter(fileAdapter);
         setUpSelectionTracker();
+        selectionTracker.onRestoreInstanceState(savedInstanceState);
         fileAdapter.setSelectionTracker(selectionTracker);
         trackerAddObserver();
         givePermission();
+        setSearchView();
+    }
+
+    private void setUpListener() {
+        clickListener = new FileItemClickListener() {
+            @Override
+            public void fileIsClicked(List<FileModel> file) {
+                AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+                builder.setPositiveButton("SEND", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        sendSelectedItems(file);
+                    }
+                });
+                builder.setNegativeButton("CANCEL", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        return;
+                    }
+                });
+                builder.setTitle("Send '" + file.get(0).getName() + "' to ... ?");
+                builder.create();
+                builder.show();
+            }
+        };
+
+        otherDocClickListener = new OtherDocClickListener() {
+            @Override
+            public void otherDocClicked() {
+                //todo  browse other docs   
+                Toast.makeText(getActivity(), "Clicked Other Doc item", Toast.LENGTH_SHORT).show();
+            }
+        };
+    }
+
+    private void sendSelectedItems(List<FileModel> file) {
+        // todo SendItems
+    }
+
+    private void setSearchView() {
+        MainActivity activity = (MainActivity) getActivity();
+        if (sv != null) {
+            if (activity.onSupportNavigateUp()) {
+                sv.setIconified(true);
+            }
+        }
     }
 
     private void trackerAddObserver() {
@@ -143,24 +173,13 @@ public class FileFragment extends Fragment implements ActionMode.Callback {
 
 
     private void setUpSelectionTracker() {
-        selectionTracker = new SelectionTracker.Builder<FileModel>(
+        selectionTracker = new SelectionTracker.Builder<BaseModel>(
                 "my-selection-id",
                 rv,
-                new MyFileKeyProvider(1, list),
+                new MyFileKeyProvider(0, list),
                 new MyFileLookup(rv),
-                StorageStrategy.createParcelableStorage(FileModel.class)
-        ).withOnItemActivatedListener(new OnItemActivatedListener<FileModel>() {
-            @Override
-            public boolean onItemActivated(@NonNull ItemDetailsLookup.ItemDetails<FileModel> item, @NonNull MotionEvent e) {
-                return true;
-            }
-        }).withOnDragInitiatedListener(new OnDragInitiatedListener() {
-            @Override
-            public boolean onDragInitiated(@NonNull MotionEvent e) {
-                return true;
-            }
-
-        }).build();
+                StorageStrategy.createParcelableStorage(BaseModel.class)
+        ).build();
     }
 
     private void setArrowButtonOnToolbar() {
@@ -183,7 +202,6 @@ public class FileFragment extends Fragment implements ActionMode.Callback {
         }
     }
 
-
     private void readDataFromStorage() {
         final List<FileModel> myFiles = new ArrayList<>();
         String download = Environment.getExternalStorageDirectory().toString() + "/Download";
@@ -197,8 +215,10 @@ public class FileFragment extends Fragment implements ActionMode.Callback {
         myFiles.addAll(myFiles.size(), readFileList(fDoc));
         myFiles.addAll(myFiles.size(), readFileList(fRoot));
 
-        fileAdapter.updateData(myFiles);
+        fileList.clear();
+        fileList.addAll(myFiles);
         originList.addAll(myFiles);
+        filesSortByName();
     }
 
     private List<FileModel> readFileList(File fDown) {
@@ -220,15 +240,6 @@ public class FileFragment extends Fragment implements ActionMode.Callback {
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
-                                           @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == READ_REQ_CODE && grantResults.length != 0) {
-            readDataFromStorage();
-        }
-    }
-
-    @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         super.onCreateOptionsMenu(menu, inflater);
         inflater.inflate(R.menu.menu_main, menu);
@@ -241,21 +252,57 @@ public class FileFragment extends Fragment implements ActionMode.Callback {
     }
 
     @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == READ_REQ_CODE && grantResults.length != 0) {
+            readDataFromStorage();
+        }
+    }
+
+    @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         if (id == R.id.search_text) {
             return true;
         } else if (id == R.id.sort_by_name) {
-            fileAdapter.sortByName();
+            filesSortByName();
             item.setChecked(true);
             return true;
         } else if (id == R.id.sort_by_date) {
-            fileAdapter.sortByDate();
+            filesSortByDate();
             item.setChecked(true);
             return true;
         }
 
         return false;
+    }
+
+    private void filesSortByDate() {
+        Collections.sort(fileList, new Comparator<FileModel>() {
+            @Override
+            public int compare(FileModel o1, FileModel o2) {
+                return (String.valueOf(o2.getLastModified()))
+                        .compareTo(String.valueOf(o1.getLastModified()));
+            }
+        });
+        list.clear();
+        list.add(header);
+        list.addAll(fileList);
+        fileAdapter.notifyDataSetChanged();
+    }
+
+    private void filesSortByName() {
+        Collections.sort(fileList, new Comparator<FileModel>() {
+            @Override
+            public int compare(FileModel o1, FileModel o2) {
+                return o1.getName().compareTo(o2.getName());
+            }
+        });
+        list.clear();
+        list.add(header);
+        list.addAll(fileList);
+        fileAdapter.notifyDataSetChanged();
     }
 
     private void searchFileByName(SearchView searchView) {
@@ -267,18 +314,22 @@ public class FileFragment extends Fragment implements ActionMode.Callback {
 
             @Override
             public boolean onQueryTextChange(String newText) {
+                fileList.clear();
                 list.clear();
+                list.add(header);
                 if (newText.isEmpty()) {
-                    list.addAll(originList);
+                    fileList.addAll(originList);
+                    list.addAll(fileList);
                     fileAdapter.notifyDataSetChanged();
                 } else {
                     for (FileModel file : originList) {
                         String name = file.getName().toLowerCase();
                         String text = newText.toLowerCase();
                         if (name.contains(text)) {
-                            list.add(file);
+                            fileList.add(file);
                         }
                     }
+                    list.addAll(fileList);
                     fileAdapter.notifyDataSetChanged();
                 }
                 return true;
@@ -294,15 +345,13 @@ public class FileFragment extends Fragment implements ActionMode.Callback {
 
     @Override
     public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
-
         return true;
     }
 
     @Override
     public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
-        if (item.getItemId() == R.id.send) {
-            actionMode.finish();
-        }
+        sendSelectedItems(sendFiles);
+        actionMode.finish();
         return true;
     }
 
@@ -311,5 +360,16 @@ public class FileFragment extends Fragment implements ActionMode.Callback {
         selectionTracker.clearSelection();
     }
 
-}
+    @Override
+    public void navClicked() {
+        sv.clearFocus();
+        sv.setIconified(true);
+    }
 
+
+    @Override
+    public void onResume() {
+        super.onResume();
+//        selectionTracker.
+    }
+}

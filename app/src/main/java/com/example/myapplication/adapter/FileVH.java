@@ -7,17 +7,18 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.selection.ItemDetailsLookup;
-import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.myapplication.R;
+import com.example.myapplication.data.BaseModel;
 import com.example.myapplication.data.FileModel;
 import com.example.myapplication.listener.FileItemClickListener;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
-public class FileVH extends RecyclerView.ViewHolder implements View.OnClickListener {
+public class FileVH extends BaseVH {
     private TextView tvName;
     private TextView tvSpace;
     private TextView tvCreatedDate;
@@ -26,11 +27,13 @@ public class FileVH extends RecyclerView.ViewHolder implements View.OnClickListe
     private View v;
     private TextView tvExtension;
     private FileModel file;
+    private View mainView;
     private FileItemClickListener listener;
 
     FileVH(@NonNull View itemView, boolean showExtension, FileItemClickListener listener) {
         super(itemView);
         this.listener = listener;
+        this.mainView = itemView;
         this.tvName = itemView.findViewById(R.id.tv_file_name);
         this.tvSpace = itemView.findViewById(R.id.tv_file_size);
         this.tvCreatedDate = itemView.findViewById(R.id.tv_file_date);
@@ -38,20 +41,19 @@ public class FileVH extends RecyclerView.ViewHolder implements View.OnClickListe
         this.showExtension = showExtension;
         this.v = itemView.findViewById(R.id.lv_another);
         this.tvExtension = itemView.findViewById(R.id.tv_extension);
-        itemView.setOnClickListener(this);
     }
 
     @Override
-    public void onClick(View v) {
-        ArrayList<FileModel> files = new ArrayList<>();
-        files.add(file);
-        listener.fileIsClicked(files);
-    }
-
-    void onBind(FileModel file, boolean selected) {
+    void onBind(BaseModel baseModel,
+                boolean selected) {
+        FileModel file = (FileModel) baseModel;
         this.file = file;
         String name = file.getName();
-        tvName.setText(name);
+        if (showExtension) {
+            tvName.setText(name);
+        } else {
+            setNameToItem(name);
+        }
         setFileSpace(file);
         setFileCreatedDate(file);
         int drawable = setFileImage(name);
@@ -64,7 +66,18 @@ public class FileVH extends RecyclerView.ViewHolder implements View.OnClickListe
             v.setVisibility(View.GONE);
             fileIc.setImageResource(drawable);
         }
-        itemView.setActivated(selected);
+        mainView.setActivated(selected);
+        if (!selected) {
+            mainView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    List<FileModel> files = new ArrayList<>();
+                    files.add(file);
+                    listener.fileIsClicked(files);
+                }
+            });
+        }
+
     }
 
     private int setFileImage(String name) {
@@ -125,5 +138,14 @@ public class FileVH extends RecyclerView.ViewHolder implements View.OnClickListe
                 return file;
             }
         };
+    }
+
+    private void setNameToItem(String nameToItem) {
+        int dot = nameToItem.lastIndexOf(".");
+        if (dot > -1) {
+            tvName.setText(nameToItem.substring(0, dot));
+        } else {
+            tvName.setText(nameToItem);
+        }
     }
 }
